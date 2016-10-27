@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BlockMap</title>
+</head>
+<body>
+    <div id="blockmap"></div>
+</body>
+
+<script type="text/javascript" src="two.js"></script>
+<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+<script type="text/javascript">
+
+    $(function() {
+        // Create some practice data
+        var t_chr1 = {
+            "name": "Chr. 1",
+            "length": 1000,
+            "components": [["query_ch1", 0, 350], ["query_ch1", 900, 1000], ['q_ch2', 350, 500], ["q_ch3", 650, 900]]
+        };
+        var t_chr2 = {
+            "name": "Chr. 2",
+            "length": 800,
+            "components": [["query_ch1", 200, 650], ["q_ch2", 0, 50], ["q_ch2", 100, 200]]
+        };
+        var t_chr3 = {
+            "name": "Chr. 3",
+            "length": 500,
+            "components": [["query_ch1", 0, 100], ["q_ch3", 150, 500]]
+        };
+        var targets = [t_chr1, t_chr2, t_chr3];
+        var queries = ["query_ch1", "q_ch2", "q_ch3"];
+
+        // Create randomized colors;
+        function getRandomColor() {
+            return 'rgb('
+              + Math.floor(Math.random() * 255) + ','
+              + Math.floor(Math.random() * 255) + ','
+              + Math.floor(Math.random() * 255) + ')';
+        }
+
+        // Global Variables
+        var elem = document.getElementById('blockmap');
+        var max_length = 1000;
+        var global_height = 500;
+        var global_width = elem.clientWidth;
+        var draw_height = global_height*0.95;
+        //var draw_width = global_width*0.8;
+        var margin = global_height * 0.01;
+
+        // Make an instance of two and place it on the page.
+        var params = { width: global_width, height: global_height, autostart: true };
+        var two = new Two(params).appendTo(elem);
+
+        // Make groups & colormap.
+        var outlines = new Two.Group();
+        var tlabels = new Two.Group();
+        var subchrs = {}; // Populated with key'ed groups.
+        var legends = {}; // Populated with key'ed groups.
+        var colorMap = {};
+        for (var qch1=0; qch1<queries.length; qch1++) {
+            subchrs[queries[qch1]] = new Two.Group();
+            legends[queries[qch1]] = new Two.Group();
+            colorMap[queries[qch1]] = getRandomColor();
+        }
+
+        // Draw Target Chromosomes.
+        var target_x = 50;
+        for (var t=0; t < targets.length; t++) {
+            var target = targets[t];
+            var total = draw_height / max_length * target["length"];
+            // Draw the sub-chromosomes.
+            for (var q=0; q< target["components"].length; q++) {
+                var query = target["components"][q];
+                var start = (max_length - query[1]) / target["length"] * total;
+                var end = (max_length - query[2])  / target["length"] * total;
+                var rect = new Two.Rectangle(target_x, (start+end)/2 + margin, 50, end-start);
+                rect.fill = colorMap[query[0]];
+                rect.opacity = 0.75;
+                rect.noStroke();
+                subchrs[query[0]].add(rect);
+            }
+            // Draw an outline around entire chromosome.
+            var outline = new Two.Rectangle(target_x, draw_height - total / 2 + margin, 50, total);
+            outline.noFill();
+            outline.stroke = 'black';
+            outlines.add(outline);
+
+            // Draw a chromosome label.
+            var text = new Two.Text(target["name"], target_x, global_height-margin);
+            tlabels.add(text);
+
+            // Increase our width counter.
+            target_x += 100;
+        }
+
+        // Draw Key.
+        var target_y = 50;
+        //var key_label = new Two.Text("Key", target_x - 25/2.0, 20);
+        //key_label.size = 24;
+        //key_label.alignment = 'left';
+        //two.add(key_label);
+
+        for (var qch2=0; qch2<queries.length; qch2++) {
+            var color_rect = new Two.Rectangle(target_x, target_y, 25, 25);
+            color_rect.fill = colorMap[queries[qch2]];
+
+            var color_label = new Two.Text(queries[qch2], target_x+25, target_y);
+            color_label.alignment = 'left';
+            legends[queries[qch2]].add(color_rect, color_label);
+            target_y += 50;
+        }
+
+                // Add all shapes to our drawing & render.
+        for (g in subchrs) {
+            if (subchrs.hasOwnProperty(g)) {
+                subchrs[g].fill = colorMap[g];
+                two.add(subchrs[g]);
+                two.add(legends[g]);
+                //console.log(legends[g]._renderer.elem);
+                two.update();
+                $(legends[g]._renderer.elem)
+                        .css('cursor', 'pointer')
+                        .click(function(e) {
+                            if (subchrs[g].fill != colorMap[g]) {
+                                subchrs[g].fill = colorMap[g];
+                            } else {
+                                subchrs[g].fill = 'rgba(255, 255, 255, 0)';
+
+                            }
+                        });
+            }
+
+        }
+        two.add(outlines);
+        two.add(tlabels);
+        two.update();
+
+//        var test = new Two.Rectangle(target_x, target_y, 25, 25);
+//
+//        test.fill = getRandomColor();
+//        two.add(test);
+//        two.update();
+//
+//        $(test._renderer.elem)
+//                .css('cursor', 'pointer')
+//                .click(function(e) {
+//                    if (subchrs['q_ch2'].fill != colorMap['q_ch2']) {
+//                        subchrs['q_ch2'].fill = colorMap['q_ch2'];
+//                    } else {
+//                        subchrs['q_ch2'].fill = 'rgba(255, 255, 255, 0)';
+//
+//                    }
+//                });
+//        console.log(test._renderer.elem);
+
+        //two.bind('update', function(frameCount, timeDelta) {
+        //    //rect.rotation = frameCount / 60;
+        //});
+    });
+</script>
+
+</html>
